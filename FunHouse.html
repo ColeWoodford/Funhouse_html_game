@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="viewport" content="width=device-width,
+initial-scale=1.0"/>
+<style>
+canvas {
+	border: 1px solid #d3d3d3;
+	background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+
+var myGamePiece;
+var myBackground;
+var myObstacle;
+
+<!--Between kitchen/living room-->
+var myWall_1;
+<!--Stair rail-->
+var myWall_2;
+<!--Between kitchen/dining room/topcounter-->
+var myWall_3;
+var livingCouch;
+var diningTable;
+var kitchenCounter;
+var livingTable;
+var livingTV;
+var kitchenOven;
+var wallCatch_kitchen;
+
+
+function startGame() {
+	myGamePiece = new component(32,32, "MainCtr.png", 50, 120, "image");
+	myObstacle = new component(10, 65, "blue", 297, 343);
+	myWall_1 = new component(10, 222, "green", 309, 185);
+	myWall_2 = new component(208, 10, "green", 99, 330);
+	myWall_3 = new component(103, 35, "green", 369, 186);
+	livingCouch = new component(35, 105, "green", 182, 152);
+	diningTable = new component(90, 35, "green", 345, 118);
+	kitchenCounter = new component(22, 133, "green", 450, 221);
+	livingTable = new component(35, 40, "green", 176, 255);
+	livingTV = new component(23, 126, "green", 25, 156);
+	kitchenOven = new component(50, 117, "green", 320, 288);
+	wallCatch_kitchen = new component(120, 10, "green", 360, 403);
+
+	myBackground = new component(512, 512, "bgrd.jpg", 0, 0, "image");
+	myGameArea.start();
+}
+
+var myGameArea = {
+	canvas : document.createElement("canvas"),
+	start : function() {
+		this.canvas.width = 512;
+		this.canvas.height = 512;
+		this.context = this.canvas.getContext("2d");
+		document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+		this.interval = setInterval(updateGameArea, 20);
+		window.addEventListener('keydown', function (e) {
+			myGameArea.keys = (myGameArea.keys || []);
+			myGameArea.keys[e.keyCode] = true;
+		})
+		window.addEventListener('keyup', function (e) {
+			myGameArea.keys[e.keyCode] = false;
+		})
+	},
+	clear : function() {
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+	},
+	stop : function() {
+		clearInterval(this.interval);
+	}
+}
+
+function component(width, height, color, x, y, type) {
+	this.type = type;
+	if (type == "image") {
+		this.image = new Image();
+		this.image.src = color;
+	}
+	this.width = width;
+	this.height = height;
+	this.angle = 0;
+	this.speedX = 0;
+	this.speedY = 0;
+	this.x = x;
+	this.y = y;
+	this.update = function(){
+		ctx = myGameArea.context;
+		if (type == "image") {
+			ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+
+			ctx.fillStyle = color;
+		}
+		else {
+			ctx.fillStyle = color;
+			ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+		}
+	}
+	this.newPos = function() {
+		this.x += this.speedX;
+		this.y += this.speedY;
+	}
+	this.crashWith = function(otherobj) {
+		var myleft = this.x;
+        	var myright = this.x + (this.width);
+        	var mytop = this.y;
+        	var mybottom = this.y + (this.height);
+        	var otherleft = otherobj.x;
+        	var otherright = otherobj.x + (otherobj.width);
+        	var othertop = otherobj.y;
+        	var otherbottom = otherobj.y + (otherobj.height);
+        	var crash = true;
+        	if ((mybottom < othertop) ||
+               		(mytop > otherbottom) ||
+               		(myright < otherleft) ||
+               		(myleft > otherright)) {
+           	crash = false;
+        	}
+        	return crash;
+    	}
+	this.hitWall = function(otherobj) {
+		var myleft = this.x;
+        	var myright = this.x + (this.width);
+        	var mytop = this.y;
+        	var mybottom = this.y + (this.height);
+		var otherleft = otherobj.x;
+        	var otherright = otherobj.x + (otherobj.width);
+        	var othertop = otherobj.y;
+        	var otherbottom = otherobj.y + (otherobj.height);
+	<!--checks player bottom for collision-->
+		if (((mybottom > othertop) &&
+			(myright > otherleft) &&
+			((mytop + 15) < othertop) &&
+			(myleft < otherright)) ||
+			((mybottom > othertop) &&
+			(myright < otherright) &&
+			((mytop + 15) < othertop) &&
+			(myright > otherleft))) {
+				this.y = (otherobj.y - this.height)
+		}
+	<!--checks player top for collision-->
+		else if (((mytop < otherbottom) &&
+			(myright > otherleft) &&
+			((mybottom) > otherbottom) &&
+			(myleft < otherright)) ||
+			((mytop < otherbottom) &&
+			(myright < otherright) &&
+			((mybottom) > otherbottom) &&
+			(myright > otherleft))) {
+				this.y = (otherobj.y + otherobj.height)
+		}
+	<!--checks player right for collision-->
+		else if (((myright > otherleft) && 
+			(mytop > othertop) &&
+			(mytop < otherbottom) &&
+			(myright < otherright)) || 
+			((myright > otherleft) && 
+			(mybottom > othertop) && 
+			(mybottom < otherbottom) &&
+			(myright < otherright))) {
+				this.x = (otherobj.x - this.width);
+		}
+	<!--checks player left for collision-->
+		else if (((myleft < otherright) &&
+			(mytop > othertop) &&
+			(mytop < otherbottom) &&
+			(myleft > otherleft)) ||
+			((myleft < otherright) &&
+			(mybottom > othertop) &&
+			(mybottom < otherbottom) &&
+			(myleft > otherleft))) {
+				this.x = (otherobj.x + otherobj.width);
+		}
+	}
+	this.hitFrame = function() {
+		var frameBottom = myGameArea.canvas.height - this.height;
+		var frameTop = 0;
+		var frameRight = myGameArea.canvas.width - this.width;
+		var frameLeft = 0;
+		if (this.y > frameBottom - 95) {
+			this.y = frameBottom - 95;
+		}
+		if (this.y < frameTop + 80) {
+			this.y = frameTop + 80;
+		}
+		if (this.x > frameRight - 33) {
+			this.x = frameRight - 33;
+		}
+		if (this.x < frameLeft + 30) {
+			this.x = frameLeft + 30;
+		}
+	}
+}
+
+function checkWalls() {
+	myGamePiece.hitWall(myWall_1);
+	myGamePiece.hitWall(myWall_2);
+	myGamePiece.hitWall(myWall_3);
+	myGamePiece.hitWall(livingCouch);
+	myGamePiece.hitWall(diningTable);
+	myGamePiece.hitWall(kitchenCounter);
+	myGamePiece.hitWall(livingTable);
+	myGamePiece.hitWall(livingTV);
+	myGamePiece.hitWall(kitchenOven);
+	myGamePiece.hitWall(wallCatch_kitchen);
+	myGamePiece.hitFrame();
+}
+
+function updateGameArea() {
+	if (myGamePiece.crashWith(myObstacle)) {
+		myGameArea.context.fillText("GAME OVER", 232, 256)
+		myGameArea.stop();
+		}
+	else{
+		myGameArea.clear();
+		<!--myBackground.newPos();-->
+		//myBackground.update();
+
+		myGamePiece.speedX = 0;
+		myGamePiece.speedY = 0;
+		checkWalls();
+			<!--up-->
+			if (myGameArea.keys && myGameArea.keys[87]) {
+				myGamePiece.speedY = -2;
+				myGamePiece.image.src = "MainCtr.png";
+			}
+			<!--down-->
+			if (myGameArea.keys && myGameArea.keys[83]) {
+				myGamePiece.speedY = 2;
+				myGamePiece.image.src = "MainCtr_down.png";
+			}
+			<!--right-->
+			if (myGameArea.keys && myGameArea.keys[68]) {
+				myGamePiece.speedX = 2;
+				myGamePiece.image.src = "MainCtr_right.png";
+			}
+			<!--left-->
+			if (myGameArea.keys && myGameArea.keys[65]) {
+				myGamePiece.speedX = -2;
+				myGamePiece.image.src = "MainCtr_left.png";
+			}
+		myGamePiece.newPos();
+
+		myObstacle.update();
+		myWall_1.update();
+		myWall_2.update();
+		myWall_3.update();
+		livingCouch.update();
+		diningTable.update();
+		kitchenCounter.update();
+		livingTable.update();
+		livingTV.update();
+		kitchenOven.update();
+		wallCatch_kitchen.update();
+
+		myBackground.update();
+
+		myGamePiece.update();
+	}
+}
+
+</script>
+
+</body>
+</html>
